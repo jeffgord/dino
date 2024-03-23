@@ -1,0 +1,173 @@
+{% extends "base.html" %}
+{% block title %}Sign Up{% endblock %}
+
+{% block content %}
+<form novalidate>
+	<h3 align="center">Sign Up</h3>
+	<div class="row justify-content-center">
+		<div class="form-group col-md-6">
+			<label for="email">Email Address</label>
+			<input type="email"
+				class="form-control"
+				id="email"
+				name="email"
+				placeholder="Enter email"
+				required />
+			<div class="invalid-feedback"></div>
+		</div>
+	</div>
+	<div class="row justify-content-center">
+		<div class="form-group col-md-6">
+			<label for="password1">Password</label>
+			<input type="password"
+				class="form-control"
+				id="password1"
+				name="password1"
+				placeholder="Enter password"
+				required />
+			<div class="invalid-feedback"></div>
+		</div>
+	</div>
+	<div class="row justify-content-center">
+		<div class="form-group col-md-6">
+			<label for="password2">Password (Confirm)</label>
+			<input type="password"
+				class="form-control"
+				id="password2"
+				name="password2"
+				placeholder="Confirm password"
+				required />
+			<div class="invalid-feedback"></div>
+		</div>
+	</div>
+	<div class="row justify-content-center">
+		<div class="form-group col-md-6">
+			<div class="form-check">
+				<input class="form-check-input"
+					type="checkbox"
+					id="agree"
+					required>
+				<label class="form-check-label"
+					for="agree">
+					I agree to use this tool responsibly, and to receive emails at the provided address in the event of
+					an
+					issue
+					with my account or deployments.
+				</label>
+			</div>
+		</div>
+	</div>
+	<br />
+	<div class="row justify-content-center">
+		<div class="col-md-6">
+			<button id="submit"
+				type="button"
+				class="btn btn-lg btn-outline-light">Submit</button>
+		</div>
+	</div>
+</form>
+{% endblock %}
+
+{% block javascript %}
+<script type="text/javascript">
+	let formElementIds = ['email', 'password1', 'password2', 'agree'];
+
+	document.addEventListener('DOMContentLoaded', async () => {
+		formElementIds.forEach(id => {
+			let element = document.getElementById(id);
+			element.addEventListener('input', validateForm);
+		});
+
+		await validateForm();
+
+		let submitButton = document.getElementById('submit');
+		submitButton.addEventListener('click', submitForm);
+	});
+
+	async function validateForm() {
+		let emailInput = document.getElementById('email');
+		let password1Input = document.getElementById('password1');
+		let password2Input = document.getElementById('password2');
+		let agreeInput = document.getElementById('agree');
+
+		// clear existing form validation
+		displayValidationOnFormElement(emailInput, true);
+		displayValidationOnFormElement(password1Input, true);
+		displayValidationOnFormElement(password2Input, true);
+		displayValidationOnFormElement(agreeInput, true);
+
+		let formValues = getFormValues();
+		let isFormValid = true;
+
+		if (!formValues.email || ! /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formValues.email)) {
+			displayValidationOnFormElement(emailInput, false, 'Please enter a valid email address');
+			isFormValid = false;
+		} else {
+			clearTimeout(emailExistsTimer);
+			emailExistsTimer = setTimeout(async () => {
+				const emailExists = await checkEmailExists(formValues.email);
+				if (emailExists) displayValidationOnFormElement(emailInput, false, 'Email already exists');
+				isFormValid = false;
+			}, 500);
+		}
+
+		if (!/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+{}\[\]:;<>,.?~\\/-]).{8,}$/.test(formValues.password1)) {
+			displayValidationOnFormElement(password1Input,
+				false,
+				'Please choose a password that is at least 8 characters long and contains at least one uppercase letter, one lowercase letter, one number, and one symbol.');
+			isFormValid = false;
+		}
+
+		if (formValues.password1 !== formValues.password2) {
+			displayValidationOnFormElement(password2Input, false, 'Passwords do not match.');
+			isFormValid = false;
+		}
+
+		if (!formValues.agree) {
+			displayValidationOnFormElement(agreeInput, false);
+			isFormValid = false;
+		}
+
+		let submitButton = document.getElementById('submit');
+		submit.disabled = !isFormValid;
+	}
+
+	function displayValidationOnFormElement(element, isValid, invalidMessage) {
+		element.classList[isValid ? 'add' : 'remove']('is-valid');
+		element.classList[isValid ? 'remove' : 'add']('is-invalid');
+
+		let feedBackElement = element.parentElement.querySelector('.invalid-feedback');
+		if (feedBackElement) {
+			if (!isValid && invalidMessage) feedBackElement.innerText = invalidMessage;
+			else feedBackElement.innerText = ''
+		}
+	}
+
+	let emailExistsTimer;
+
+	async function checkEmailExists(email) {
+		let response = await fetch(`/sign-up/check-email-exist/${email}`);
+		let data = await response.json();
+		return data.exists;
+	}
+
+	function submitForm() {
+		fetch('/sign-up/add-user', {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json',
+			},
+			body: JSON.stringify(getFormValues())
+		});
+	}
+
+	function getFormValues() {
+		return {
+			email: document.getElementById('email').value,
+			password1: document.getElementById('password1').value,
+			password2: document.getElementById('password2').value,
+			agree: document.getElementById('agree').checked
+		};
+	}
+</script>
+{% endblock%}
