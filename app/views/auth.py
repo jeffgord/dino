@@ -6,44 +6,16 @@ from flask import (
     flash,
     redirect,
     url_for,
-    abort,
 )
-from .models.models import User
+from ..models.models import User
 from werkzeug.security import generate_password_hash, check_password_hash
-from . import db  ##means from __init__.py import db
+from .. import db  ##means from __init__.py import db
 from flask_login import login_user, login_required, logout_user, current_user
 import re
-from .lib import ajax_requests
+from http import HTTPStatus
 
 
 auth = Blueprint("auth", __name__)
-
-
-@auth.route("/login", methods=["GET", "POST"])
-def login():
-    if request.method == "POST":
-        email = request.form.get("email")
-        password = request.form.get("password")
-
-        user = User.query.filter_by(email=email).first()
-        if user:
-            if check_password_hash(user.password, password):
-                flash("Logged in successfully!", category="success")
-                login_user(user, remember=True)
-                return redirect(url_for("views.home"))
-            else:
-                flash("Incorrect password, try again.", category="error")
-        else:
-            flash("Email does not exist.", category="error")
-
-    return render_template("login.html", user=current_user)
-
-
-@auth.route("/logout")
-@login_required
-def logout():
-    logout_user()
-    return redirect(url_for("auth.login"))
 
 
 @auth.route("/sign-up", methods=["GET"])
@@ -72,7 +44,7 @@ def add_user():
         or password1 != password2
         or not agree
     ):
-        return ajax_requests.bad_request()
+        return HTTPStatus.BAD_REQUEST
 
     new_user = User(
         email=email,
@@ -83,7 +55,7 @@ def add_user():
     db.session.commit()
     login_user(new_user, remember=True)
 
-    return ajax_requests.success()
+    return HTTPStatus.OK
 
 
 def is_valid_email(email):
@@ -96,3 +68,34 @@ def is_valid_password(password):
         r"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+{}\[\]:;<>,.?~\\/-]).{8,}$"
     )
     return re.match(pattern, password) is not None
+
+
+@auth.route("/login", methods=["GET", "POST"])
+def login():
+    return render_template("login.html")
+
+
+@auth.route("/login/login-account", methods=["POST"])
+def login_account():
+    data = request.get_json()
+    email = data.get("email")
+    password = data.get("password")
+
+    if not email or not password:
+        return HTTPStatus.BAD_REQUEST
+
+    user = User.query.filter_by(email=email).first()
+    if not user:
+        return HTTPStatus.NOT_FOUND
+    elif not check_password_hash(user.password, password):
+        return HTTPStatus.UNAUTHORIZED
+
+    login_user(user, remember=True)
+    return HTTPStatus.OK
+
+
+@auth.route("/logout")
+@login_required
+def logout():
+    logout_user()
+    return redirect(url_for("auth.login"))
