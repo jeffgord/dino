@@ -106,7 +106,7 @@
 			clearTimeout(emailExistsTimer);
 			emailExistsTimer = setTimeout(async () => {
 				const emailExists = await checkEmailExists(formValues.email);
-				if (emailExists) displayValidationOnFormElement(emailInput, false, 'Email already exists');
+				if (emailExists) displayValidationOnFormElement(emailInput, false, 'An account with this email already exists.');
 				isFormValid = false;
 			}, 500);
 		}
