@@ -1,2 +1,3 @@
 Using google login with flask: https://realpython.com/flask-google-login/
 techwithtim's flask skeleton: https://github.com/techwithtim/Flask-Web-App-Tutorial
+bootstrap CSS manual: https://getbootstrap.com/
