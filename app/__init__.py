@@ -1,15 +1,22 @@
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
-from os import path
+from os import path, environ
 from flask_login import LoginManager
+from oauthlib.oauth2 import WebApplicationClient
 
 db = SQLAlchemy()
 DB_NAME = "database.db"
 
+GOOGLE_CLIENT_ID = environ.get(
+    "GOOGLE_CLIENT_ID", None
+)  # todo: set this and other environment vars up
+GOOGLE_CLIENT_SECRET = environ.get("GOOGLE_CLIENT_SECRET", None)
+GOOGLE_DISCOVERY_URL = "https://accounts.google.com/.well-known/openid-configuration"
+
 
 def create_app():
     app = Flask(__name__)
-    app.config["SECRET_KEY"] = "hjshjhdjah kjshkjdhjs"
+    app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY")  # todo: set this up
     app.config["SQLALCHEMY_DATABASE_URI"] = f"sqlite:///{DB_NAME}"
     db.init_app(app)
 
@@ -23,6 +30,8 @@ def create_app():
 
     with app.app_context():
         db.create_all()
+
+    client = WebApplicationClient(GOOGLE_CLIENT_ID)
 
     login_manager = LoginManager()
     login_manager.login_view = "sign_up.login"
